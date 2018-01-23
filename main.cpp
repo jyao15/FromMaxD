@@ -42,6 +42,10 @@ typedef pair<int,int> ipair;
 #define PB(X) push_back(X)
 typedef vector<int> VI;
 
+
+int source_group=1,target_group=2;
+
+
 int n,m,c;      // node number and edge number in original graph
 int *degree,**graph;
 int *area;
@@ -73,16 +77,16 @@ void load_graph(string filename)  // set global variable degree and graph
 	fclose(f);
 }
 
-int random()
+int myrandom()
 {
 	int v1=rand()&32767;
 	int v2=rand()&32767;
 	return (v1<<15)|v2;
 }
 
-int random(int n)
+int myrandom(int n)
 {
-	return random()%n;
+	return myrandom()%n;
 }
 
 VI get_community_kernel(int mask) // mask is binary 00..010..00
@@ -206,25 +210,6 @@ void build_network(vector<VI> kernels)
 	for (int base=0,k=0;k<c;k++)
 	{
 		set<int> S1,S2;
-		/*
-		for (int i=0;i<c;i++) 
-		{
-			for (int j=0;j<SIZE(kernels[i]);j++)  
-			{
-				if (i==k) 
-				{
-					S1.insert(kernels[i][j]);
-				}
-				else 
-				{
-					if (i<k) 
-					{
-						S2.insert(kernels[i][j]);
-					}
-				}
-			}
-		}
-		*/
 		for (int i=0;i<k;i++)
 		{
 			for (int j=0;j<SIZE(kernels[i]);j++) S2.insert(kernels[i][j]);
