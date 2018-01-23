@@ -209,7 +209,7 @@ VI get_common(VI a,VI b)
 	return c;
 }
 
-void build_network(vector<VI>& kernels, vector< pair<int,int> >& candidates)
+void build_network(vector<VI>& kernels, vector< pair<int,int> >& candidates, string candidate_file)
 {
 	//printf("DEBUG : build_network : ");  // c:SIZE(kernels)
 	init(n+2,n,n+1);
@@ -223,6 +223,7 @@ void build_network(vector<VI>& kernels, vector< pair<int,int> >& candidates)
 	for (set<int>::iterator it=S2.begin();it!=S2.end();++it) if (S1.find(*it)==S1.end()) addedge((*it),dest,n,0);  // *it is in (S2-S1)
 
 	set<int> candidates_tmp;
+	FILE* fp=fopen(candidate_file.c_str(),"wt");
 	for (set<int>::iterator it=S1.begin();it!=S1.end();++it)
 	{
 		for (int j=0;j<degree[*it];j++)
@@ -231,7 +232,12 @@ void build_network(vector<VI>& kernels, vector< pair<int,int> >& candidates)
 			if ((S1.find(v) == S1.end()) && S2.find(v) == S2.end()) candidates_tmp.insert(v);
 		}
 	}
-	for (set<int>::iterator it=candidates_tmp.begin();it!=candidates_tmp.end();++it) candidates.push_back(pair<int,int>(*it,-1));
+	for (set<int>::iterator it=candidates_tmp.begin();it!=candidates_tmp.end();++it)
+	{
+		candidates.push_back(pair<int,int>(*it,-1));
+		fprintf(fp,"%d\n",*it);
+	}
+	fclose(fp);
 	//printf("node = %d   edge = %d\n",node,edge_number);
 }
 
@@ -278,6 +284,9 @@ int main(int argc,char **args)
 {
 	string graph_file="dblp_graph.txt";
 	string community_file="community.txt";
+	string output_file="result.txt";
+	string candidate_file="candidates.txt";
+    FILE* fp=fopen(output_file.c_str(),"wt");
 	vector<int> area;
 	for (int i=0;i<6;i++) area.push_back(pow(2,i));
 	int size=50;
@@ -310,7 +319,7 @@ int main(int argc,char **args)
 	bool *added=new bool[n];
 	for (int i=0;i<n;i++) added[i]=false;
 	vector< pair<int,int> > mycandidates;
-	build_network(kernels,mycandidates);
+	build_network(kernels,mycandidates,candidate_file);
 	//int *sflow=new int[n];
 	//ipair *q=new ipair[n];
 	for (int step=0;step<size;step++)  // size is k in "finding top-k users ..."
@@ -337,11 +346,12 @@ int main(int argc,char **args)
 		*/
 		ipair ret=pick_candidate(mycandidates);
 		//printf("STEP %2d %d\n",step,ret.first);
-		printf("%d\n",ret.second);
+		fprintf(fp,"%d\n",ret.second);
 		//printf("%d %d\n",ret.first,ret.second);
 	}
 	//delete[] sflow;
 	//delete[] q;
+	fclose(fp);
 	return 0;
 }
 
