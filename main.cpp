@@ -209,7 +209,7 @@ VI get_common(VI a,VI b)
 	return c;
 }
 
-void build_network(vector<VI>& kernels, VI& candidates)
+void build_network(vector<VI>& kernels, vector< pair<int,int> >& candidates)
 {
 	//printf("DEBUG : build_network : ");  // c:SIZE(kernels)
 	init(n+2,n,n+1);
@@ -227,7 +227,7 @@ void build_network(vector<VI>& kernels, VI& candidates)
 		for (int j=0;j<degree[*it];j++)
 		{
 			int v=graph[*it][j];
-			if ((S1.find(v) == S1.end()) && S2.find(v) == S2.end()) candidates.push_back(v);
+			if ((S1.find(v) == S1.end()) && S2.find(v) == S2.end()) candidates.push_back(pair<int,int>(v,-1));
 		}
 	}
 	//printf("node = %d   edge = %d\n",node,edge_number);
@@ -250,22 +250,25 @@ int get_multi_cut(vector<VI> &kernels,bool *save)
 	return ret;
 }
 */
-ipair pick_candidate(VI &candidates)  // the only function that changes (bool *save)
+ipair pick_candidate(vector< pair<int,int> > &candidates)  // the only function that changes (bool *save)
 {
 	int old_flow=max_flow(-1);
 	for (int i=0;i<edge_number;i++) prev_flow[i]=flow[i];
-	int maxflow=old_flow,best_key=-1;
+	int maxflow=old_flow,best_i=-1,best_node=-1;
 	//printf("%d",SIZE(candidates));
 	for (int i=0;i<SIZE(candidates);i++)
 	{
-		int key=candidates[i];
+		int key=candidates[i].first;
 		printf("calculating candidate %d\n",i);
-		int tmp=max_flow(key,prev_flow);
-		if (old_flow+tmp>maxflow) maxflow=old_flow+tmp,best_key=key; 
+		if (candidates[i].second==-2) continue;
+		if ((candidates[i].second!=-1)&&(old_flow+candidates[i].second<=maxflow)) continue;
+		candidates[i].second=max_flow(key,prev_flow);
+		if (old_flow+candidates[i].second>maxflow) maxflow=old_flow+candidates[i].second,best_i=i,best_node=key; 
 	}
 	//printf("\n");
-	candidates.erase(std::remove(candidates.begin(), candidates.end(), best_key), candidates.end());
-	return MP(maxflow,best_key);
+	candidates[best_i].second=-2;
+	//candidates.erase(std::remove(candidates.begin(), candidates.end(), best_key), candidates.end());
+	return MP(maxflow,best_node);
 }
 
 int main(int argc,char **args)
@@ -303,7 +306,7 @@ int main(int argc,char **args)
 	c=SIZE(kernels);
 	bool *added=new bool[n];
 	for (int i=0;i<n;i++) added[i]=false;
-	VI mycandidates;
+	vector< pair<int,int> > mycandidates;
 	build_network(kernels,mycandidates);
 	//int *sflow=new int[n];
 	//ipair *q=new ipair[n];
