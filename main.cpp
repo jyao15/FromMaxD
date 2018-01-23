@@ -43,7 +43,7 @@ typedef pair<int,int> ipair;
 typedef vector<int> VI;
 
 
-int source_group=1,target_group=2;
+int source_group=0,target_group=1;
 
 
 int n,m,c;      // node number and edge number in original graph
@@ -98,7 +98,7 @@ VI get_community_kernel(int mask) // mask is binary 00..010..00
 			q.push_back(MP(degree[i], i));  // make pair for sorting
 	sort(q.begin(), q.end());
 	reverse(q.begin(), q.end());
-	for (int i = 0; i < SIZE(q) / 100; ++i)  // choose top 1% users (with highest degrees) in this area
+	for (int i = 0; i < SIZE(q) / 1; ++i)  // choose top 1% users (with highest degrees) in this area
 		ret.push_back(q[i].second);
 	return ret;
 }
@@ -128,7 +128,7 @@ void addedge(int u,int v,int c1,int c2)
 }
 void remove_last_edge()
 {
-	edge_number -= 2;
+	edge_number -= 1;
 	head[edge_number]=next_[edge_number];
 	head[edge_number+1]=next_[edge_number+1];
 }
@@ -218,7 +218,7 @@ void build_network(vector<VI>& kernels, VI& candidates)
 	for (int j=0;j<SIZE(kernels[target_group]);j++) S2.insert(kernels[target_group][j]);
 
 	if (SIZE(S1)==0 || SIZE(S2)==0) return;
-	for (int i=0;i<n;i++) for (int j=0;j<degree[i];j++) addedge(i,graph[i][j],1,1);
+	for (int i=0;i<n;i++) for (int j=0;j<degree[i];j++) if (i<graph[i][j]) addedge(i,graph[i][j],1,1);
 	for (set<int>::iterator it=S1.begin();it!=S1.end();++it) if (S2.find(*it)==S2.end()) addedge(src,(*it),n,0);  // *it is in (S1-S2)
 	for (set<int>::iterator it=S2.begin();it!=S2.end();++it) if (S1.find(*it)==S1.end()) addedge((*it),dest,n,0);  // *it is in (S2-S1)
 
@@ -270,11 +270,11 @@ ipair pick_candidate(VI &candidates)  // the only function that changes (bool *s
 
 int main(int argc,char **args)
 {
-	string graph_file="dblp_graph.txt";
-	string community_file="community.txt";
+	string graph_file="debug_graph.txt";
+	string community_file="debug_community.txt";
 	vector<int> area;
-	for (int i=0;i<6;i++) area.push_back(pow(2,i));
-	int size=50;
+	for (int i=0;i<2;i++) area.push_back(pow(2,i));
+	int size=2;
 	/*
 	for (int i=1;i+1<argc;i++) if (args[i][0]=='-')
 		if (args[i][1]=='g')
