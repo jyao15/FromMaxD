@@ -43,7 +43,7 @@ typedef pair<int,int> ipair;
 typedef vector<int> VI;
 
 
-int source_group=0,target_group=1;
+int source_group=1,target_group=2;
 
 
 int n,m,c;      // node number and edge number in original graph
@@ -222,14 +222,16 @@ void build_network(vector<VI>& kernels, vector< pair<int,int> >& candidates)
 	for (set<int>::iterator it=S1.begin();it!=S1.end();++it) if (S2.find(*it)==S2.end()) addedge(src,(*it),n,0);  // *it is in (S1-S2)
 	for (set<int>::iterator it=S2.begin();it!=S2.end();++it) if (S1.find(*it)==S1.end()) addedge((*it),dest,n,0);  // *it is in (S2-S1)
 
+	set<int> candidates_tmp;
 	for (set<int>::iterator it=S1.begin();it!=S1.end();++it)
 	{
 		for (int j=0;j<degree[*it];j++)
 		{
 			int v=graph[*it][j];
-			if ((S1.find(v) == S1.end()) && S2.find(v) == S2.end()) candidates.push_back(pair<int,int>(v,-1));
+			if ((S1.find(v) == S1.end()) && S2.find(v) == S2.end()) candidates_tmp.insert(v);
 		}
 	}
+	for (set<int>::iterator it=candidates_tmp.begin();it!=candidates_tmp.end();++it) candidates.push_back(pair<int,int>(*it,-1));
 	//printf("node = %d   edge = %d\n",node,edge_number);
 }
 
@@ -259,13 +261,14 @@ ipair pick_candidate(vector< pair<int,int> > &candidates)  // the only function 
 	for (int i=0;i<SIZE(candidates);i++)
 	{
 		int key=candidates[i].first;
-		printf("calculating candidate %d\n",i);
+		//printf("calculating candidate %d\n",i);
 		if (candidates[i].second==-2) continue;
 		if ((candidates[i].second!=-1)&&(old_flow+candidates[i].second<=maxflow)) continue;
 		candidates[i].second=max_flow(key,prev_flow);
 		if (old_flow+candidates[i].second>maxflow) maxflow=old_flow+candidates[i].second,best_i=i,best_node=key; 
 	}
 	//printf("\n");
+	addedge(src,best_node,n,0);
 	candidates[best_i].second=-2;
 	//candidates.erase(std::remove(candidates.begin(), candidates.end(), best_key), candidates.end());
 	return MP(maxflow,best_node);
@@ -273,11 +276,11 @@ ipair pick_candidate(vector< pair<int,int> > &candidates)  // the only function 
 
 int main(int argc,char **args)
 {
-	string graph_file="debug_graph.txt";
-	string community_file="debug_community.txt";
+	string graph_file="dblp_graph.txt";
+	string community_file="community.txt";
 	vector<int> area;
-	for (int i=0;i<2;i++) area.push_back(pow(2,i));
-	int size=2;
+	for (int i=0;i<6;i++) area.push_back(pow(2,i));
+	int size=50;
 	/*
 	for (int i=1;i+1<argc;i++) if (args[i][0]=='-')
 		if (args[i][1]=='g')
