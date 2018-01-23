@@ -206,23 +206,16 @@ VI get_common(VI a,VI b)
 void build_network(vector<VI> kernels)
 {
 	//printf("DEBUG : build_network : ");  // c:SIZE(kernels)
-	init(n*(c-1)+2,n*(c-1),n*(c-1)+1);  // set global variable src,dest,head(-1),node(node_number),edge_number(0)
-	for (int base=0,k=0;k<c;k++)
-	{
-		set<int> S1,S2;
-		for (int i=0;i<k;i++)
-		{
-			for (int j=0;j<SIZE(kernels[i]);j++) S2.insert(kernels[i][j]);
-		}
-		for (int j=0;j<SIZE(kernels[k]);j++) S1.insert(kernels[k][j]);
+	init(n+2,n,n+1);
+	set<int> S1,S2;
+	for (int j=0;j<SIZE(kernels[source_group]);j++) S1.insert(kernels[source_group][j]);
+	for (int j=0;j<SIZE(kernels[target_group]);j++) S1.insert(kernels[target_group][j]);
 
-		if (SIZE(S1)==0 || SIZE(S2)==0) continue;
-		for (int i=0;i<n;i++) for (int j=0;j<degree[i];j++) addedge(base+i,base+graph[i][j],1,1);
-		for (set<int>::iterator it=S1.begin();it!=S1.end();++it) if (S2.find(*it)==S2.end()) addedge(src,base+(*it),n,0);  // *it is in (S1-S2)
-		for (set<int>::iterator it=S2.begin();it!=S2.end();++it) if (S1.find(*it)==S1.end()) addedge(base+(*it),dest,n,0);  // *it is in (S2-S1)
-		// this subgraph has sources (S1-S2) and sinks (S2-S1), the c subgraphs are independent
-		base+=n;   
-	}
+	if (SIZE(S1)==0 || SIZE(S2)==0) return;
+	for (int i=0;i<n;i++) for (int j=0;j<degree[i];j++) addedge(i,graph[i][j],1,1);
+	for (set<int>::iterator it=S1.begin();it!=S1.end();++it) if (S2.find(*it)==S2.end()) addedge(src,(*it),n,0);  // *it is in (S1-S2)
+	for (set<int>::iterator it=S2.begin();it!=S2.end();++it) if (S1.find(*it)==S1.end()) addedge((*it),dest,n,0);  // *it is in (S2-S1)
+
 	//printf("node = %d   edge = %d\n",node,edge_number);
 }
 
@@ -307,7 +300,7 @@ int main(int argc,char **args)
 	{
 		for (int i=0;i<n;i++) sflow[i]=0;
 		max_flow(kernels,save);
-		for (int i=0;i<n*(c-1);i++) for (int k=head[i];k>=0;k=next_[k]) if (flow[k]>0) sflow[i%n]+=flow[k]; // sflow is the flow for each node in the original graph
+		for (int i=0;i<n;i++) for (int k=head[i];k>=0;k=next_[k]) if (flow[k]>0) sflow[i%n]+=flow[k]; // sflow is the flow for each node in the original graph
 		for (int i=0;i<n;i++)
 			if (!save[i])
 				q[i]=MP(-1,i); 
