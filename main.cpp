@@ -128,9 +128,9 @@ void addedge(int u,int v,int c1,int c2)
 }
 void remove_last_edge()
 {
-	edge_number -= 1;
-	head[edge_number]=next_[edge_number];
-	head[edge_number+1]=next_[edge_number+1];
+	edge_number -= 2;
+	head[point[edge_number+1]]=next_[edge_number];
+	head[point[edge_number]]=next_[edge_number+1];
 }
 bool dinic_bfs()
 {
@@ -261,7 +261,7 @@ ipair pick_candidate(VI &candidates)  // the only function that changes (bool *s
 		int key=candidates[i];
 		printf("calculating candidate %d\n",i);
 		int tmp=max_flow(key,prev_flow);
-		if (tmp>maxflow) maxflow=tmp,best_key=key; 
+		if (old_flow+tmp>maxflow) maxflow=old_flow+tmp,best_key=key; 
 	}
 	//printf("\n");
 	candidates.erase(std::remove(candidates.begin(), candidates.end(), best_key), candidates.end());
