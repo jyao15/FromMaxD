@@ -43,19 +43,21 @@ typedef pair<int,int> ipair;
 typedef vector<int> VI;
 
 
-int source_group=0,target_group=5;
+int source_group=3,target_group=2;
 
 
 int n,m,c;      // node number and edge number in original graph
 int *degree,**graph;
 int *area;
+double *pagerank;
+double *pagerank_tmp;
 
 void load_area(string filename)  // set global variable area
 {
 	area=new int[n];
 	FILE *f=fopen(filename.c_str(),"r");
 	for (int i=0;i<n;i++) fscanf(f,"%d",&area[i]);
-	fclose(f);
+	std::fclose(f);
 }
 
 void load_graph(string filename)  // set global variable degree and graph
@@ -72,9 +74,12 @@ void load_graph(string filename)  // set global variable degree and graph
 	graph=new int* [n];
 	for (int i=0;i<n;i++) graph[i]=new int[degree[i]];
 	for (int i=0;i<n;i++) degree[i]=0;
+	pagerank=new double [n];
+	pagerank_tmp=new double [n];
+	for (int i=0;i<n;i++) pagerank[i]=0;
 	for (int i=0;i<m+m;i++) if (e_list[i]!=e_list[i^1]) graph[e_list[i]][degree[e_list[i]]++]=e_list[i^1];
 	delete[] e_list;
-	fclose(f);
+	std::fclose(f);
 }
 
 int myrandom()
@@ -97,23 +102,13 @@ VI get_community_kernel(int mask) // mask is binary 00..010..00
 		if ((area[i] & mask) == mask)
 			q.push_back(MP(degree[i], i));  // make pair for sorting
 	sort(q.begin(), q.end());
-	reverse(q.begin(), q.end());
+	std::reverse(q.begin(), q.end());
 	for (int i = 0; i < SIZE(q) / 1; ++i)  // choose top 1% users (with highest degrees) in this area
 		ret.push_back(q[i].second);
 	return ret;
 }
 
-const int maxnode=7000000+5;
-const int maxedge=60000000+5;
-const int oo=1000000000;
-
-int node,src,dest,edge_number;               // these variables are all about the newly created graph
-int head[maxnode],point[maxedge],next_[maxedge],flow[maxedge],capa[maxedge];  // capa is not residual
-int dist[maxnode],Q[maxnode],work[maxnode];
-bool dsave[maxnode];
-int prev_flow[maxedge];
-
-void build_network(vector<VI>& kernels, vector< pair<int,int> >& candidates, string candidate_file)
+void build_network(vector<VI>& kernels, vector< pair<double,int> >& candidates, string candidate_file)
 {
 	//printf("DEBUG : build_network : ");  // c:SIZE(kernels)
 	set<int> S1,S2;
@@ -134,11 +129,31 @@ void build_network(vector<VI>& kernels, vector< pair<int,int> >& candidates, str
 	}
 	for (set<int>::iterator it=candidates_tmp.begin();it!=candidates_tmp.end();++it)
 	{
-		candidates.push_back(pair<int,int>(0,*it));
+		candidates.push_back(pair<double,int>(0,*it));
 		fprintf(fp,"%d\n",*it);
 	}
-	fclose(fp);
+	std::fclose(fp);
 	//printf("node = %d   edge = %d\n",node,edge_number);
+}
+
+
+const int pagerank_iteration=10;
+const double back_prob=0.1;
+
+void calculate_pagerank(VI targets)
+{
+	for (int i=0;i<SIZE(targets);i++) pagerank[targets[i]]=1/SIZE(targets);
+	for (int iteration=0;iteration<pagerank_iteration;iteration++)
+	{
+		for (int i=0;i<n;i++)
+		{
+			pagerank_tmp[i]=0;
+			for (int j=0;j<degree[i];j++) pagerank_tmp[i]+=pagerank[graph[i][j]]/degree[graph[i][j]];
+		}
+		for (int i=0;i<n;i++) pagerank_tmp[i]*=(1-back_prob);
+		for (int i=0;i<SIZE(targets);i++) pagerank_tmp[targets[i]]+=back_prob/SIZE(targets);
+		for (int i=0;i<n;i++) pagerank[i]=pagerank_tmp[i];
+	}
 }
 
 
@@ -177,22 +192,17 @@ int main(int argc,char **args)
 		printf("Community %d is too small.",i);
 		return 0;
 	}
-	c=SIZE(kernels);
-	vector< pair<int,int> > mycandidates;
+	calculate_pagerank(kernels[target_group]);
+	vector< pair<double,int> > mycandidates;
 	build_network(kernels,mycandidates,candidate_file);
 	for (int i=0;i<SIZE(mycandidates);i++)
 	{
-		int candidate=mycandidates[i].second;
-		for (int j=0;j<degree[candidate];j++)
-		{
-			if (find(kernels[source_group].begin(),kernels[source_group].end(),graph[candidate][j])!=kernels[source_group].end()) mycandidates[i].first++;
-			if (find(kernels[target_group].begin(),kernels[target_group].end(),graph[candidate][j])!=kernels[target_group].end()) mycandidates[i].first++;
-		}
+		mycandidates[i].first=pagerank[mycandidates[i].second];
 	}
 	sort(mycandidates.begin(),mycandidates.end());
-	reverse(mycandidates.begin(),mycandidates.end());
+	std::reverse(mycandidates.begin(),mycandidates.end());
 	for (int i=0;i<size;i++) fprintf(fp,"%d\n",mycandidates[i].second);
-	fclose(fp);
+	std::fclose(fp);
 	return 0;
 }
 
