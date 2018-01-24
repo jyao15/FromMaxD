@@ -43,7 +43,7 @@ typedef pair<int,int> ipair;
 typedef vector<int> VI;
 
 
-int source_group=0,target_group=3;
+int source_group=0,target_group=5;
 
 
 int n,m,c;      // node number and edge number in original graph
@@ -113,114 +113,14 @@ int dist[maxnode],Q[maxnode],work[maxnode];
 bool dsave[maxnode];
 int prev_flow[maxedge];
 
-void init(int _node,int _src,int _dest)
-{
-	node=_node;
-	src=_src;
-	dest=_dest;
-	for (int i=0;i<node;i++) head[i]=-1;
-	edge_number=0;
-}
-void addedge(int u,int v,int c1,int c2)
-{
-	point[edge_number]=v,capa[edge_number]=c1,flow[edge_number]=0,next_[edge_number]=head[u],head[u]=(edge_number++); // head and next_ compose a list for every node in the new graph
-	point[edge_number]=u,capa[edge_number]=c2,flow[edge_number]=0,next_[edge_number]=head[v],head[v]=(edge_number++);
-}
-void remove_last_edge()
-{
-	edge_number -= 2;
-	head[point[edge_number+1]]=next_[edge_number];
-	head[point[edge_number]]=next_[edge_number+1];
-}
-bool dinic_bfs()
-{
-	for (int i=0;i<node;i++) dist[i]=-1;
-	dist[src]=0;
-	int sizeQ=0;
-	Q[sizeQ++]=src;   // Q is the nodes in the level graph, sizeQ is its size
-	for (int cl=0;cl<sizeQ;cl++)
-		for (int k=Q[cl],i=head[k];i>=0;i=next_[i])
-			if (flow[i]<capa[i] && dist[point[i]]<0)  // dsave == false: user have been chosen in the top-k
-			{
-				dist[point[i]]=dist[k]+1;
-				Q[sizeQ++]=point[i];
-			}
-	return dist[dest]>=0;
-}
-int dinic_dfs(int x,int exp)
-{
-	if (x==dest) return exp;
-	int res=0;
-	for (int &i=work[x];i>=0;i=next_[i])
-	{
-		int v=point[i],tmp;  // v is a node, i is an edge
-		if (flow[i]<capa[i] && dist[v]==dist[x]+1 && (tmp=dinic_dfs(v,min(exp,capa[i]-flow[i])))>0)
-		{
-			flow[i]+=tmp;
-			flow[i^1]-=tmp;
-			res+=tmp;
-			exp-=tmp;
-			if (exp==0) break;  // <=? never happen?
-		}
-	}
-	return res;
-}
-int dinic_flow()
-{
-	int result=0;
-	while (dinic_bfs())
-	{
-		for (int i=0;i<node;i++) work[i]=head[i];  // maybe redundant
-		result+=dinic_dfs(src,oo);  // oo is a big enough number
-	}
-	return result;
-}
-
-void load_community_kernels(string filename,vector<VI> &kernels)
-{
-	FILE *f=fopen(filename.c_str(),"r");
-	int size;
-	while (fscanf(f,"%d",&size)!=-1)
-	{
-		VI a;
-		int t;
-		for (int i=0;i<size;i++) { fscanf(f,"%d",&t); a.push_back(t); }
-		kernels.push_back(a);
-	}
-	fclose(f);
-}
-
-VI get_common(VI a,VI b)
-{
-	VI c;
-	sort(a.begin(),a.end());
-	sort(b.begin(),b.end());
-	for (int i=0,j=0;i<SIZE(a) && j<SIZE(b);)
-		if (a[i]==b[j])
-		{
-			c.push_back(a[i]);
-			i++;
-			j++;
-		}
-		else if (a[i]<b[j])
-			i++;
-		else
-			j++;
-	return c;
-}
-
 void build_network(vector<VI>& kernels, vector< pair<int,int> >& candidates, string candidate_file)
 {
 	//printf("DEBUG : build_network : ");  // c:SIZE(kernels)
-	init(n+2,n,n+1);
 	set<int> S1,S2;
 	for (int j=0;j<SIZE(kernels[source_group]);j++) S1.insert(kernels[source_group][j]);
 	for (int j=0;j<SIZE(kernels[target_group]);j++) S2.insert(kernels[target_group][j]);
 
 	if (SIZE(S1)==0 || SIZE(S2)==0) return;
-	for (int i=0;i<n;i++) for (int j=0;j<degree[i];j++) if (i<graph[i][j]) addedge(i,graph[i][j],1,1);
-	for (set<int>::iterator it=S1.begin();it!=S1.end();++it) if (S2.find(*it)==S2.end()) addedge(src,(*it),n,0);  // *it is in (S1-S2)
-	for (set<int>::iterator it=S2.begin();it!=S2.end();++it) if (S1.find(*it)==S1.end()) addedge((*it),dest,n,0);  // *it is in (S2-S1)
 
 	set<int> candidates_tmp;
 	FILE* fp=fopen(candidate_file.c_str(),"wt");
@@ -234,51 +134,13 @@ void build_network(vector<VI>& kernels, vector< pair<int,int> >& candidates, str
 	}
 	for (set<int>::iterator it=candidates_tmp.begin();it!=candidates_tmp.end();++it)
 	{
-		candidates.push_back(pair<int,int>(*it,-1));
+		candidates.push_back(pair<int,int>(0,*it));
 		fprintf(fp,"%d\n",*it);
 	}
 	fclose(fp);
 	//printf("node = %d   edge = %d\n",node,edge_number);
 }
 
-int max_flow(int added_node,int *prev_flow=NULL)
-{
-	if (prev_flow!=NULL) for (int i=0;i<edge_number;i++) flow[i]=prev_flow[i];
-	else for (int i=0;i<edge_number;i++) flow[i]=0;
-	if (added_node>=0) addedge(src,added_node,n,0);
-	int ret=dinic_flow();
-	if (added_node>=0) remove_last_edge();
-	return ret;
-}
-/*
-int get_multi_cut(vector<VI> &kernels,bool *save)
-{
-	build_network(kernels);
-	int ret=max_flow(kernels,save);
-	return ret;
-}
-*/
-ipair pick_candidate(vector< pair<int,int> > &candidates)  // the only function that changes (bool *save)
-{
-	int old_flow=max_flow(-1);
-	for (int i=0;i<edge_number;i++) prev_flow[i]=flow[i];
-	int maxflow=old_flow,best_i=-1,best_node=-1;
-	//printf("%d",SIZE(candidates));
-	for (int i=0;i<SIZE(candidates);i++)
-	{
-		int key=candidates[i].first;
-		//printf("calculating candidate %d\n",i);
-		if (candidates[i].second==-2) continue;
-		if ((candidates[i].second!=-1)&&(old_flow+candidates[i].second<=maxflow)) continue;
-		candidates[i].second=max_flow(key,prev_flow);
-		if (old_flow+candidates[i].second>maxflow) maxflow=old_flow+candidates[i].second,best_i=i,best_node=key; 
-	}
-	//printf("\n");
-	addedge(src,best_node,n,0);
-	candidates[best_i].second=-2;
-	//candidates.erase(std::remove(candidates.begin(), candidates.end(), best_key), candidates.end());
-	return MP(maxflow,best_node);
-}
 
 int main(int argc,char **args)
 {
@@ -316,41 +178,20 @@ int main(int argc,char **args)
 		return 0;
 	}
 	c=SIZE(kernels);
-	bool *added=new bool[n];
-	for (int i=0;i<n;i++) added[i]=false;
 	vector< pair<int,int> > mycandidates;
 	build_network(kernels,mycandidates,candidate_file);
-	//int *sflow=new int[n];
-	//ipair *q=new ipair[n];
-	for (int step=0;step<size;step++)  // size is k in "finding top-k users ..."
+	for (int i=0;i<SIZE(mycandidates);i++)
 	{
-		//for (int i=0;i<n;i++) sflow[i]=0;
-		//max_flow(added);
-		/*
-		for (int i=0;i<n;i++) for (int k=head[i];k>=0;k=next_[k]) if (flow[k]>0) sflow[i%n]+=flow[k]; // sflow is the flow for each node in the original graph
-		for (int i=0;i<n;i++)
-			if (!save[i])
-				q[i]=MP(-1,i); 
-			else
-				q[i]=MP(sflow[i]+degree[i],i);
-		sort(q,q+n);
-		reverse(q,q+n);
-		vector<int> candidates;
-		for (int i=0;i<n;i++) 
+		int candidate=mycandidates[i].second;
+		for (int j=0;j<degree[candidate];j++)
 		{
-			if (save[q[i].second] && SIZE(candidates)<size) 
-			{
-				candidates.push_back(q[i].second);
-			}
+			if (find(kernels[source_group].begin(),kernels[source_group].end(),graph[candidate][j])!=kernels[source_group].end()) mycandidates[i].first++;
+			if (find(kernels[target_group].begin(),kernels[target_group].end(),graph[candidate][j])!=kernels[target_group].end()) mycandidates[i].first++;
 		}
-		*/
-		ipair ret=pick_candidate(mycandidates);
-		//printf("STEP %2d %d\n",step,ret.first);
-		fprintf(fp,"%d\n",ret.second);
-		//printf("%d %d\n",ret.first,ret.second);
 	}
-	//delete[] sflow;
-	//delete[] q;
+	sort(mycandidates.begin(),mycandidates.end());
+	reverse(mycandidates.begin(),mycandidates.end());
+	for (int i=0;i<size;i++) fprintf(fp,"%d\n",mycandidates[i].second);
 	fclose(fp);
 	return 0;
 }
