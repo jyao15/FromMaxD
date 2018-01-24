@@ -43,7 +43,7 @@ typedef pair<int,int> ipair;
 typedef vector<int> VI;
 
 
-int source_group=1,target_group=2;
+int source_group=0,target_group=3;
 
 
 int n,m,c;      // node number and edge number in original graph
@@ -289,7 +289,7 @@ int main(int argc,char **args)
     FILE* fp=fopen(output_file.c_str(),"wt");
 	vector<int> area;
 	for (int i=0;i<6;i++) area.push_back(pow(2,i));
-	int size=50;
+	int size=200;
 	/*
 	for (int i=1;i+1<argc;i++) if (args[i][0]=='-')
 		if (args[i][1]=='g')
